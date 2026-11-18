@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="hi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dausa Transport - Live Pickup & Destination</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f3f7f4;color:#15251b}header{background:#146b3b;color:white;padding:20px 16px;text-align:center}header h1{margin:0;font-size:24px}header p{margin:6px 0 0;opacity:.9}.wrap{max-width:520px;margin:auto;padding:14px}.tabs{display:flex;gap:8px;margin:12px 0}.tabs button{flex:1;border:0;border-radius:12px;padding:12px;font-weight:700;background:#dce9df;color:#17472d}.tabs button.active{background:#176c3b;color:white}.card{background:white;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 3px 14px #193b2210}.label{font-size:13px;color:#617568;margin-bottom:5px}.input{width:100%;padding:12px;border:1px solid #d3dfd6;border-radius:10px;font-size:16px;margin-bottom:12px}.btn{width:100%;border:0;padding:13px;border-radius:12px;background:#176c3b;color:white;font-weight:700;font-size:16px;margin:6px 0;cursor:pointer}.btn.alt{background:#e4eee7;color:#176c3b}.btn.red{background:#a93232}.status{padding:10px;border-radius:10px;background:#e8f4ec;color:#176c3b;font-weight:700;text-align:center}.hidden{display:none}.muted{color:#64756a;font-size:14px}.order{border:1px solid #d7e3da;padding:12px;border-radius:12px;margin:10px 0}.toast{position:fixed;bottom:15px;left:50%;transform:translateX(-50%);background:#183b27;color:white;padding:12px 16px;border-radius:12px;display:none;box-shadow:0 5px 20px #0002;max-width:90%;text-align:center}.tag{display:inline-block;background:#eef4ef;padding:5px 9px;border-radius:999px;font-size:12px;margin-right:4px}#pickerMap{height:360px;width:100%;border-radius:12px;margin:8px 0 12px;z-index:1}.map-note{font-size:13px;color:#617568;margin:4px 0 8px}
+</style></head><body>
+<header><h1>🚖 Dausa Transport</h1><p>ग्राहक बुकिंग और ड्राइवर डेमो</p></header>
+<div class="wrap"><div class="tabs"><button id="custTab" class="active" onclick="show('customer')">ग्राहक ऐप</button><button id="drvTab" onclick="show('driver')">ड्राइवर ऐप</button></div>
+<section id="customer">
+<div class="card"><h2>गाड़ी बुक करें</h2><div class="label">आपका नाम</div><input id="cName" class="input" placeholder="नाम लिखें"><div class="label">पिकअप लोकेशन (जहाँ से गाड़ी लेनी है)</div>
+<input id="pickup" class="input" placeholder="वर्तमान लोकेशन या मैप से चुनें" readonly>
+<button class="btn alt" onclick="getCurrentLocation('pickup')">📍 पिकअप की वर्तमान लोकेशन लें</button>
+<button class="btn alt" onclick="openMapPicker('pickup')">🗺️ पिकअप मैप पर चुनें</button>
+<div class="label">डेस्टिनेशन (जहाँ जाना है)</div>
+<input id="dest" class="input" placeholder="मैप से मंजिल चुनें" readonly>
+<button class="btn alt" onclick="getCurrentLocation('dest')">📍 डेस्टिनेशन में वर्तमान लोकेशन लें</button>
+<button class="btn alt" onclick="openMapPicker('dest')">🗺️ डेस्टिनेशन मैप पर चुनें</button>
+<p class="muted">दोनों जगह GPS से अपने आप या मैप पर टैप करके चुनी जा सकती हैं।</p>
+<div id="mapPickerPanel" class="hidden">
+<h3 id="mapPickerTitle">लोकेशन चुनें</h3>
+<p class="map-note">मैप पर सही जगह टैप करें या ऊपर जगह का नाम खोजें।</p>
+<div style="display:flex;gap:6px">
+<input id="mapSearch" class="input" style="margin-bottom:6px" placeholder="जैसे: दौसा बस स्टैंड">
+<button class="btn" style="width:auto;margin:0 0 6px" onclick="searchMapPlace()">खोजें</button>
+</div>
+<div id="pickerMap"></div>
+<p id="mapAddressPreview" class="map-note">अभी कोई जगह नहीं चुनी गई</p>
+<button class="btn" onclick="confirmMapLocation()">इस लोकेशन को चुनें</button>
+<button class="btn alt" onclick="closeMapPicker()">मैप बंद करें</button>
+</div><div class="label">गाड़ी</div><select id="vehicle" class="input"><option>ऑटो / ई-रिक्शा</option><option>कार</option><option>लोडिंग वाहन</option><option>अन्य</option></select><button class="btn" onclick="book()">बुकिंग भेजें</button><p class="muted">डेमो: ऑर्डर इसी पेज पर दिखता है। अलग मोबाइलों के बीच लाइव बुकिंग के लिए ऑनलाइन डेटाबेस/सर्वर जोड़ना बाकी है।</p></div>
+<div class="card"><h3>बुकिंग की स्थिति</h3><div id="customerStatus" class="status">अभी कोई बुकिंग नहीं</div><p id="driverInfo" class="muted"></p></div>
+</section>
+<section id="driver" class="hidden"><div class="card"><h2>ड्राइवर डैशबोर्ड</h2><div id="onlineStatus" class="status">आप ऑफलाइन हैं</div><button id="onlineBtn" class="btn" onclick="toggleOnline()">ऑनलाइन हों</button><p class="muted">ऑनलाइन करने पर डेमो ऑर्डर दिखेंगे।</p></div><div class="card"><h3>नया ऑर्डर 🔔</h3><div id="orderBox" class="muted">ऑनलाइन होने पर नया ऑर्डर यहाँ दिखाई देगा।</div></div><div class="card"><h3>कमाई (डेमो)</h3><p>आज की कमाई: <b id="earn">₹0</b></p><p>एजेंट कमीशन: <b id="comm">₹0</b></p></div></section>
+</div><div class="toast" id="toast"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+let online=false,currentOrder=null,accepted=false,earnings=0,commission=0;
+let pickerMap=null,pickerMarker=null,selectedPoint=null,pickerTarget='pickup';
+function show(which){document.getElementById('customer').classList.toggle('hidden',which!=='customer');document.getElementById('driver').classList.toggle('hidden',which!=='driver');document.getElementById('custTab').classList.toggle('active',which==='customer');document.getElementById('drvTab').classList.toggle('active',which==='driver')}
+function toast(msg){let t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',3000)}
+function coords(id){const e=document.getElementById(id);return e.dataset.lat&&e.dataset.lng?{lat:Number(e.dataset.lat),lng:Number(e.dataset.lng)}:null}
+async function addressFor(lat,lng){
+  try{const u=`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;const r=await fetch(u,{headers:{'Accept-Language':'hi,en'}});if(!r.ok)throw 0;const d=await r.json();return d.display_name||`${lat.toFixed(6)}, ${lng.toFixed(6)}`;}catch(e){return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;}
+}
+function setField(id,label,lat,lng){
+ const f=document.getElementById(id);f.value=label;f.dataset.lat=lat;f.dataset.lng=lng;
+}
+function getCurrentLocation(target){
+ if(!navigator.geolocation){toast('आपके ब्राउज़र में GPS उपलब्ध नहीं है');return}
+ if(!window.isSecureContext){toast('GPS चलाने के लिए GitHub Pages का HTTPS लिंक खोलें');return}
+ toast('फोन की GPS लोकेशन ली जा रही है…');
+ navigator.geolocation.getCurrentPosition(async pos=>{
+  const lat=pos.coords.latitude,lng=pos.coords.longitude;
+  const label=await addressFor(lat,lng);setField(target,label,lat,lng);
+  toast((target==='pickup'?'पिकअप':'डेस्टिनेशन')+' की वर्तमान लोकेशन मिल गई');
+ },err=>{
+  if(err.code===1)toast('Chrome में Location permission Allow करें');
+  else if(err.code===2)toast('फोन की Location/GPS चालू करके फिर कोशिश करें');
+  else toast('GPS में समय लगा। खुले स्थान पर फिर कोशिश करें');
+ },{enableHighAccuracy:true,maximumAge:0,timeout:25000});
+}
+function openMapPicker(target){
+ pickerTarget=target;selectedPoint=null;
+ document.getElementById('mapPickerTitle').textContent=target==='pickup'?'पिकअप लोकेशन चुनें':'डेस्टिनेशन चुनें';
+ document.getElementById('mapAddressPreview').textContent='मैप पर टैप करके जगह चुनें';
+ document.getElementById('mapSearch').value='';
+ document.getElementById('mapPickerPanel').classList.remove('hidden');
+ if(typeof L==='undefined'){toast('मैप लोड नहीं हुआ। इंटरनेट चालू करके पेज रिफ्रेश करें');return}
+ let initial=[26.89,76.33],existing=coords(target);
+ if(existing)initial=[existing.lat,existing.lng];
+ else if(target==='dest'&&coords('pickup')){let c=coords('pickup');initial=[c.lat,c.lng]}
+ if(!pickerMap){
+  pickerMap=L.map('pickerMap').setView(initial,14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(pickerMap);
+  pickerMap.on('click',e=>selectMapPoint(e.latlng.lat,e.latlng.lng));
+ }else pickerMap.setView(initial,14);
+ if(existing)selectMapPoint(existing.lat,existing.lng,false);
+ setTimeout(()=>pickerMap.invalidateSize(),250);
+}
+async function selectMapPoint(lat,lng,lookup=true){
+ selectedPoint={lat,lng,label:`${lat.toFixed(6)}, ${lng.toFixed(6)}`};
+ if(pickerMarker)pickerMarker.setLatLng([lat,lng]);else pickerMarker=L.marker([lat,lng]).addTo(pickerMap);
+ document.getElementById('mapAddressPreview').textContent='चुनी गई जगह: '+selectedPoint.label;
+ if(lookup){toast('चुनी हुई जगह का पता खोज रहे हैं…');const label=await addressFor(lat,lng);selectedPoint={lat,lng,label};document.getElementById('mapAddressPreview').textContent='चुनी गई जगह: '+label;}
+}
+async function searchMapPlace(){
+ const q=document.getElementById('mapSearch').value.trim();if(!q){toast('पहले जगह का नाम लिखें');return}
+ if(!pickerMap)openMapPicker(pickerTarget);
+ toast('मैप पर जगह खोज रहे हैं…');
+ try{const u=`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&addressdetails=1&q=${encodeURIComponent(q)}`;const r=await fetch(u,{headers:{'Accept-Language':'hi,en'}});if(!r.ok)throw 0;const a=await r.json();if(!a.length){toast('जगह नहीं मिली, दूसरा नाम लिखें');return}const x=a[0],lat=Number(x.lat),lng=Number(x.lon);pickerMap.setView([lat,lng],17);await selectMapPoint(lat,lng); }catch(e){toast('खोज नहीं हो सकी। मैप पर सीधे टैप करें')}
+}
+function confirmMapLocation(){
+ if(!selectedPoint){toast('पहले मैप पर कोई जगह चुनें');return}
+ setField(pickerTarget,selectedPoint.label,selectedPoint.lat,selectedPoint.lng);
+ closeMapPicker();toast(pickerTarget==='pickup'?'पिकअप लोकेशन सेव हो गई':'डेस्टिनेशन सेव हो गया');
+}
+function closeMapPicker(){document.getElementById('mapPickerPanel').classList.add('hidden')}
+function book(){
+ const name=document.getElementById('cName').value.trim(),pickup=document.getElementById('pickup').value.trim(),dest=document.getElementById('dest').value.trim(),vehicle=document.getElementById('vehicle').value;
+ const p=coords('pickup'),d=coords('dest');
+ if(!name){toast('अपना नाम लिखें');return}
+ if(!pickup||!p){toast('पहले पिकअप की GPS लोकेशन लें या मैप पर चुनें');return}
+ if(!dest||!d){toast('पहले डेस्टिनेशन GPS से लें या मैप पर चुनें');return}
+ currentOrder={name,pickup,dest,vehicle,pickupLat:p.lat,pickupLng:p.lng,destLat:d.lat,destLng:d.lng,id:'DT-'+Math.floor(1000+Math.random()*9000)};
+ accepted=false;document.getElementById('customerStatus').textContent='ड्राइवर खोज रहे हैं…';document.getElementById('driverInfo').textContent='बुकिंग आईडी: '+currentOrder.id;renderOrder();toast('बुकिंग तैयार — डेमो ऑर्डर सेव हुआ');if(online){show('driver');toast('नया ऑर्डर उपलब्ध है')}
+}
+function toggleOnline(){online=!online;document.getElementById('onlineStatus').textContent=online?'आप ऑनलाइन हैं':'आप ऑफलाइन हैं';document.getElementById('onlineBtn').textContent=online?'ऑफलाइन हों':'ऑनलाइन हों';document.getElementById('onlineBtn').classList.toggle('red',online);renderOrder()}
+function routeUrl(){return `https://www.google.com/maps/dir/?api=1&origin=${currentOrder.pickupLat},${currentOrder.pickupLng}&destination=${currentOrder.destLat},${currentOrder.destLng}&travelmode=driving`}
+function renderOrder(){
+ let box=document.getElementById('orderBox');if(!online){box.innerHTML='ऑर्डर देखने के लिए ऑनलाइन हों।';return}if(!currentOrder){box.innerHTML='अभी कोई ऑर्डर नहीं है।';return}
+ let details=`<p><b>बुकिंग:</b> ${currentOrder.id}</p><p><b>ग्राहक:</b> ${esc(currentOrder.name)}</p><p><b>पिकअप:</b> ${esc(currentOrder.pickup)}</p><p><b>डेस्टिनेशन:</b> ${esc(currentOrder.dest)}</p><p><b>गाड़ी:</b> ${esc(currentOrder.vehicle)}</p><a class="btn alt" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="${routeUrl()}">🗺️ पिकअप से डेस्टिनेशन तक रास्ता खोलें</a>`;
+ if(accepted){box.innerHTML='<div class="status">ऑर्डर स्वीकार किया गया</div>'+details+'<button class="btn" onclick="completeTrip()">यात्रा पूरी करें</button>'}
+ else{box.innerHTML='<div class="order"><span class="tag">नया ऑर्डर 🔔</span>'+details+'<button class="btn" onclick="accept()">ऑर्डर स्वीकार करें</button><button class="btn red" onclick="reject()">अस्वीकार</button></div>'}
+}
+function accept(){if(!currentOrder)return;accepted=true;document.getElementById('customerStatus').textContent='ड्राइवर ने ऑर्डर स्वीकार कर लिया ✅';document.getElementById('driverInfo').textContent='ड्राइवर आपके पिकअप पर आने की तैयारी में है (डेमो)';renderOrder();toast('ऑर्डर स्वीकार हुआ')}
+function reject(){currentOrder=null;accepted=false;document.getElementById('customerStatus').textContent='ड्राइवर उपलब्ध नहीं — दूसरा ड्राइवर खोजें';document.getElementById('driverInfo').textContent='';renderOrder();toast('ऑर्डर अस्वीकार किया गया')}
+function completeTrip(){let fare=500,rate=.10;earnings+=fare*(1-rate);commission+=fare*rate;document.getElementById('earn').textContent='₹'+earnings.toFixed(0);document.getElementById('comm').textContent='₹'+commission.toFixed(0);currentOrder=null;accepted=false;document.getElementById('customerStatus').textContent='यात्रा पूरी हुई';document.getElementById('driverInfo').textContent='';renderOrder();toast('डेमो यात्रा पूरी')}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+</script></body></html>
