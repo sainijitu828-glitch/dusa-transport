@@ -1,96 +1,21 @@
 <!DOCTYPE html>
 <html lang="hi"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dausa Transport Demo</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f3f7f4;color:#15251b}header{background:#146b3b;color:white;padding:20px 16px;text-align:center}header h1{margin:0;font-size:24px}header p{margin:6px 0 0;opacity:.9}.wrap{max-width:520px;margin:auto;padding:14px}.tabs{display:flex;gap:8px;margin:12px 0}.tabs button{flex:1;border:0;border-radius:12px;padding:12px;font-weight:700;background:#dce9df;color:#17472d}.tabs button.active{background:#176c3b;color:white}.card{background:white;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 3px 14px #193b2210}.label{font-size:13px;color:#617568;margin-bottom:5px}.input{width:100%;padding:12px;border:1px solid #d3dfd6;border-radius:10px;font-size:16px;margin-bottom:12px}.btn{width:100%;border:0;padding:13px;border-radius:12px;background:#176c3b;color:white;font-weight:700;font-size:16px;margin:6px 0;cursor:pointer}.btn.alt{background:#e4eee7;color:#176c3b}.btn.red{background:#a93232}.status{padding:10px;border-radius:10px;background:#e8f4ec;color:#176c3b;font-weight:700;text-align:center}.hidden{display:none}.muted{color:#64756a;font-size:14px}.order{border:1px solid #d7e3da;padding:12px;border-radius:12px;margin:10px 0}.toast{position:fixed;bottom:15px;left:50%;transform:translateX(-50%);background:#183b27;color:white;padding:12px 16px;border-radius:12px;display:none;box-shadow:0 5px 20px #0002;max-width:90%;text-align:center}.tag{display:inline-block;background:#eef4ef;padding:5px 9px;border-radius:999px;font-size:12px;margin-right:4px}#destMap{height:340px;width:100%;border-radius:12px;margin:8px 0 12px;z-index:1}.map-note{font-size:13px;color:#617568;margin:4px 0 8px}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f3f7f4;color:#15251b}header{background:#146b3b;color:white;padding:20px 16px;text-align:center}header h1{margin:0;font-size:24px}header p{margin:6px 0 0;opacity:.9}.wrap{max-width:520px;margin:auto;padding:14px}.tabs{display:flex;gap:8px;margin:12px 0}.tabs button{flex:1;border:0;border-radius:12px;padding:12px;font-weight:700;background:#dce9df;color:#17472d}.tabs button.active{background:#176c3b;color:white}.card{background:white;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 3px 14px #193b2210}.label{font-size:13px;color:#617568;margin-bottom:5px}.input{width:100%;padding:12px;border:1px solid #d3dfd6;border-radius:10px;font-size:16px;margin-bottom:12px}.btn{width:100%;border:0;padding:13px;border-radius:12px;background:#176c3b;color:white;font-weight:700;font-size:16px;margin:6px 0;cursor:pointer}.btn.alt{background:#e4eee7;color:#176c3b}.btn.red{background:#a93232}.status{padding:10px;border-radius:10px;background:#e8f4ec;color:#176c3b;font-weight:700;text-align:center}.hidden{display:none}.muted{color:#64756a;font-size:14px}.order{border:1px solid #d7e3da;padding:12px;border-radius:12px;margin:10px 0}.toast{position:fixed;bottom:15px;left:50%;transform:translateX(-50%);background:#183b27;color:white;padding:12px 16px;border-radius:12px;display:none;box-shadow:0 5px 20px #0002;max-width:90%;text-align:center}.tag{display:inline-block;background:#eef4ef;padding:5px 9px;border-radius:999px;font-size:12px;margin-right:4px}
 </style></head><body>
 <header><h1>🚖 Dausa Transport</h1><p>ग्राहक बुकिंग और ड्राइवर डेमो</p></header>
 <div class="wrap"><div class="tabs"><button id="custTab" class="active" onclick="show('customer')">ग्राहक ऐप</button><button id="drvTab" onclick="show('driver')">ड्राइवर ऐप</button></div>
 <section id="customer">
-<div class="card"><h2>गाड़ी बुक करें</h2><div class="label">आपका नाम</div><input id="cName" class="input" placeholder="नाम लिखें"><div class="label">पिकअप लोकेशन</div><input id="pickup" class="input" placeholder="GPS लोकेशन या पता"><button class="btn alt" onclick="getLocation('pickup')">📍 मेरी वर्तमान लोकेशन लें</button><div class="label">कहाँ जाना है (डेस्टिनेशन)</div><input id="dest" class="input" placeholder="गंतव्य लिखें"><button class="btn alt" onclick="openDestinationMap()">🗺️ मैप खोलकर डेस्टिनेशन चुनें</button><div id="destinationMapPanel" class="hidden"><p class="map-note">मैप पर अपनी मंजिल वाली जगह पर टैप करें। पिन लगने के बाद लोकेशन इस्तेमाल करें।</p><div id="destMap"></div><button class="btn" onclick="useSelectedDestination()">इस लोकेशन को डेस्टिनेशन चुनें</button><button class="btn alt" onclick="closeDestinationMap()">मैप बंद करें</button></div><div class="label">गाड़ी</div><select id="vehicle" class="input"><option>ऑटो / ई-रिक्शा</option><option>कार</option><option>लोडिंग वाहन</option><option>अन्य</option></select><button class="btn" onclick="book()">बुकिंग भेजें</button><p class="muted">डेमो: ऑर्डर इसी पेज पर दिखता है। अलग मोबाइलों के बीच लाइव बुकिंग के लिए ऑनलाइन डेटाबेस/सर्वर जोड़ना बाकी है।</p></div>
+<div class="card"><h2>गाड़ी बुक करें</h2><div class="label">आपका नाम</div><input id="cName" class="input" placeholder="नाम लिखें"><div class="label">पिकअप लोकेशन</div><input id="pickup" class="input" placeholder="GPS लोकेशन या पता"><button class="btn alt" onclick="getLocation('pickup')">📍 मेरी वर्तमान लोकेशन लें</button><div class="label">कहाँ जाना है (डेस्टिनेशन)</div><input id="dest" class="input" placeholder="गंतव्य लिखें"><button class="btn alt" onclick="getLocation('dest')">📍 गंतव्य लोकेशन GPS से लें</button><div class="label">गाड़ी</div><select id="vehicle" class="input"><option>ऑटो / ई-रिक्शा</option><option>कार</option><option>लोडिंग वाहन</option><option>अन्य</option></select><button class="btn" onclick="book()">बुकिंग भेजें</button><p class="muted">डेमो: ऑर्डर इसी पेज पर दिखता है। अलग मोबाइलों के बीच लाइव बुकिंग के लिए ऑनलाइन डेटाबेस/सर्वर जोड़ना बाकी है।</p></div>
 <div class="card"><h3>बुकिंग की स्थिति</h3><div id="customerStatus" class="status">अभी कोई बुकिंग नहीं</div><p id="driverInfo" class="muted"></p></div>
 </section>
 <section id="driver" class="hidden"><div class="card"><h2>ड्राइवर डैशबोर्ड</h2><div id="onlineStatus" class="status">आप ऑफलाइन हैं</div><button id="onlineBtn" class="btn" onclick="toggleOnline()">ऑनलाइन हों</button><p class="muted">ऑनलाइन करने पर डेमो ऑर्डर दिखेंगे।</p></div><div class="card"><h3>नया ऑर्डर 🔔</h3><div id="orderBox" class="muted">ऑनलाइन होने पर नया ऑर्डर यहाँ दिखाई देगा।</div></div><div class="card"><h3>कमाई (डेमो)</h3><p>आज की कमाई: <b id="earn">₹0</b></p><p>एजेंट कमीशन: <b id="comm">₹0</b></p></div></section>
 </div><div class="toast" id="toast"></div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 let online=false, currentOrder=null, accepted=false, earnings=0, commission=0;
-let destinationMap=null, destinationMarker=null, selectedDestination=null;
 function show(which){document.getElementById('customer').classList.toggle('hidden',which!=='customer');document.getElementById('driver').classList.toggle('hidden',which!=='driver');document.getElementById('custTab').classList.toggle('active',which==='customer');document.getElementById('drvTab').classList.toggle('active',which==='driver')}
 function toast(msg){let t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',2800)}
-function getLocation(id){
-  const field=document.getElementById(id);
-  if(!field) return;
-  if(!window.isSecureContext){toast('GPS के लिए वेबसाइट HTTPS पर खोलें');return;}
-  if(!navigator.geolocation){toast('इस ब्राउज़र में GPS उपलब्ध नहीं है');return;}
-  field.value='लोकेशन प्राप्त हो रही है…';
-  toast('कृपया GPS अनुमति दें और खुले स्थान पर रहें');
-  const success=pos=>{
-    const lat=pos.coords.latitude, lng=pos.coords.longitude;
-    field.value=`${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-    field.dataset.lat=lat; field.dataset.lng=lng;
-    toast('वर्तमान लोकेशन मिल गई');
-  };
-  const fail=err=>{
-    // कुछ Android फोन में high-accuracy GPS देर से मिलता है; नेटवर्क लोकेशन से दोबारा प्रयास करें।
-    if(!field.dataset.gpsRetried){
-      field.dataset.gpsRetried='1';
-      navigator.geolocation.getCurrentPosition(success, finalFail,
-        {enableHighAccuracy:false, maximumAge:120000, timeout:25000});
-      return;
-    }
-    finalFail(err);
-  };
-  const finalFail=err=>{
-    delete field.dataset.gpsRetried;
-    field.value='';
-    if(err && err.code===1) toast('लोकेशन अनुमति बंद है। Chrome की Site settings में Location को Allow करें।');
-    else if(err && err.code===2) toast('लोकेशन नहीं मिल रही। फोन की Location/GPS चालू करके फिर कोशिश करें।');
-    else if(err && err.code===3) toast('GPS में समय लग रहा है। खुले स्थान पर जाकर दोबारा कोशिश करें।');
-    else toast('लोकेशन नहीं मिली। फोन की GPS सेटिंग जांचें।');
-  };
-  delete field.dataset.gpsRetried;
-  navigator.geolocation.getCurrentPosition(success,fail,
-    {enableHighAccuracy:true, maximumAge:30000, timeout:15000});
-}
-function openDestinationMap(){
-  const panel=document.getElementById('destinationMapPanel');
-  panel.classList.remove('hidden');
-  if(typeof L==='undefined'){toast('मैप लोड नहीं हुआ। इंटरनेट कनेक्शन जांचें।');return}
-  if(!destinationMap){
-    let start=[26.89,76.33];
-    const pickup=document.getElementById('pickup').value.trim();
-    const match=pickup.match(/^(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)$/);
-    if(match) start=[Number(match[1]),Number(match[2])];
-    destinationMap=L.map('destMap').setView(start,13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(destinationMap);
-    destinationMap.on('click',async function(e){
-      const lat=e.latlng.lat, lng=e.latlng.lng;
-      selectedDestination={lat,lng,label:`${lat.toFixed(6)}, ${lng.toFixed(6)}`};
-      if(destinationMarker) destinationMarker.setLatLng(e.latlng);
-      else destinationMarker=L.marker(e.latlng).addTo(destinationMap);
-      toast('मैप पर जगह चुनी गई');
-      try{
-        const response=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
-        if(response.ok){const data=await response.json();if(data.display_name) selectedDestination.label=data.display_name;}
-      }catch(err){}
-    });
-  }
-  setTimeout(()=>destinationMap.invalidateSize(),150);
-  if(navigator.geolocation){
-    navigator.geolocation.getCurrentPosition(pos=>{
-      if(!selectedDestination) destinationMap.setView([pos.coords.latitude,pos.coords.longitude],14);
-    },()=>{},{enableHighAccuracy:true,timeout:6000});
-  }
-}
-function useSelectedDestination(){
-  if(!selectedDestination){toast('पहले मैप पर अपनी मंजिल चुनें');return}
-  document.getElementById('dest').value=selectedDestination.label;
-  closeDestinationMap();
-  toast('डेस्टिनेशन चुन लिया गया');
-}
-function closeDestinationMap(){document.getElementById('destinationMapPanel').classList.add('hidden')}
-
+function getLocation(id){let field=document.getElementById(id);if(!navigator.geolocation){toast('इस ब्राउज़र में GPS उपलब्ध नहीं');return}field.value='लोकेशन प्राप्त हो रही है…';navigator.geolocation.getCurrentPosition(pos=>{field.value=`${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;toast('लोकेशन मिल गई')},err=>{field.value='';toast('लोकेशन अनुमति दें या पता लिखें')},{enableHighAccuracy:true,timeout:12000})}
 function book(){let name=document.getElementById('cName').value.trim(),pickup=document.getElementById('pickup').value.trim(),dest=document.getElementById('dest').value.trim(),vehicle=document.getElementById('vehicle').value;if(!name||!pickup||!dest){toast('नाम, पिकअप और डेस्टिनेशन भरें');return}currentOrder={name,pickup,dest,vehicle,id:'DT-'+Math.floor(1000+Math.random()*9000)};accepted=false;document.getElementById('customerStatus').textContent='ड्राइवर खोज रहे हैं…';document.getElementById('driverInfo').textContent='बुकिंग आईडी: '+currentOrder.id;renderOrder();toast('बुकिंग भेजी गई — ड्राइवर ऐप में डेमो अलर्ट');if(online){show('driver');toast('नया ऑर्डर! घंटी 🔔')}}
 function toggleOnline(){online=!online;document.getElementById('onlineStatus').textContent=online?'आप ऑनलाइन हैं':'आप ऑफलाइन हैं';document.getElementById('onlineBtn').textContent=online?'ऑफलाइन हों':'ऑनलाइन हों';document.getElementById('onlineBtn').classList.toggle('red',online);if(online&&currentOrder&&!accepted){renderOrder();toast('नया ऑर्डर उपलब्ध 🔔')}}
 function renderOrder(){let box=document.getElementById('orderBox');if(!online){box.innerHTML='ऑर्डर देखने के लिए ऑनलाइन हों।';return}if(!currentOrder){box.innerHTML='अभी कोई ऑर्डर नहीं है। ग्राहक ऐप से डेमो बुकिंग भेजें।';return}if(accepted){box.innerHTML=`<div class="status">ऑर्डर स्वीकार किया गया</div><p><b>बुकिंग:</b> ${currentOrder.id}</p><p><b>ग्राहक:</b> ${esc(currentOrder.name)}</p><p><b>पिकअप:</b> ${esc(currentOrder.pickup)}</p><p><b>डेस्टिनेशन:</b> ${esc(currentOrder.dest)}</p><p><b>गाड़ी:</b> ${esc(currentOrder.vehicle)}</p><a class="btn alt" style="display:block;text-align:center;text-decoration:none" target="_blank" href="https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(currentOrder.pickup)}&destination=${encodeURIComponent(currentOrder.dest)}">🗺️ रास्ता Google Maps में खोलें</a><button class="btn alt" onclick="getLocation('drvLoc')">📍 अपनी लोकेशन अपडेट करें</button><input id="drvLoc" class="input" placeholder="ड्राइवर GPS लोकेशन"><button class="btn" onclick="completeTrip()">यात्रा पूरी करें</button>`;return}box.innerHTML=`<div class="order"><span class="tag">नया ऑर्डर 🔔</span><p><b>बुकिंग:</b> ${currentOrder.id}</p><p><b>ग्राहक:</b> ${esc(currentOrder.name)}</p><p><b>पिकअप:</b> ${esc(currentOrder.pickup)}</p><p><b>डेस्टिनेशन:</b> ${esc(currentOrder.dest)}</p><p><b>गाड़ी:</b> ${esc(currentOrder.vehicle)}</p><a class="btn alt" style="display:block;text-align:center;text-decoration:none" target="_blank" href="https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(currentOrder.pickup)}&destination=${encodeURIComponent(currentOrder.dest)}">🗺️ रास्ता Google Maps में खोलें</a><button class="btn" onclick="accept()">ऑर्डर स्वीकार करें</button><button class="btn red" onclick="reject()">अस्वीकार</button></div>`}
